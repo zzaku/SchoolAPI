@@ -112,20 +112,33 @@ namespace SchoolApi.Controllers
             return Content(coursesJson, "application/json");
         }
 
-        [HttpPost("student/{studentId}")]
-        [Authorize]
-        public async Task<ActionResult<Course>> CreateCourseForStudent(int studentId, Course course)
+        public async Task<IActionResult> AssignCourseToStudent(int studentId, int courseId)
         {
+            // Recherchez l'étudiant par ID
             var student = await _context.Users.FindAsync(studentId);
             if (student == null)
             {
-                return NotFound($"Student with Id = {studentId} not found");
+                return NotFound($"Etudiant avec l'id = {studentId} pas trouvé");
             }
-            course.Users.Add(student);
-            _context.Courses.Add(course);
+
+            // Recherchez le cours par ID
+            var course = await _context.Courses.FindAsync(courseId);
+            if (course == null)
+            {
+                return NotFound($"Cours avec l'id = {courseId} pas trouvé");
+            }
+
+            var courseStudent = new CourseStudent
+            {
+                CourseId = courseId,
+                UserId = studentId
+            };
+
+            _context.CourseStudents.Add(courseStudent);
             await _context.SaveChangesAsync();
-            return CreatedAtAction(nameof(GetCourseById), new { id = course.Id }, course);
-        }
+
+    return Ok($"Assigned Course with Id = {courseId} to Student with Id = {studentId}");
+}
 
         [HttpPut("student/{studentId}/{courseId}")]
         [Authorize]
