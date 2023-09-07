@@ -112,6 +112,7 @@ namespace SchoolApi.Controllers
             return Content(coursesJson, "application/json");
         }
 
+        // À modifier
         [HttpPost("student/{studentId}/course/{courseId}")]
         [Authorize]
         public async Task<IActionResult> AssignCourseToStudent(int studentId, int courseId)
