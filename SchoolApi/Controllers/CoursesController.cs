@@ -112,20 +112,36 @@ namespace SchoolApi.Controllers
             return Content(coursesJson, "application/json");
         }
 
-        [HttpPost("student/{studentId}")]
-        [Authorize]
-        public async Task<ActionResult<Course>> CreateCourseForStudent(int studentId, Course course)
+        [HttpPost("student/{studentId}/course/{courseId}")]
+        
+        public async Task<IActionResult> AssignCourseToStudent(int studentId, int courseId)
         {
+            // Recherchez l'étudiant par ID
             var student = await _context.Users.FindAsync(studentId);
             if (student == null)
             {
                 return NotFound($"Student with Id = {studentId} not found");
             }
-            course.Users.Add(student);
-            _context.Courses.Add(course);
+
+            // Recherchez le cours par ID
+            var course = await _context.Courses.FindAsync(courseId);
+            if (course == null)
+            {
+                return NotFound($"Course with Id = {courseId} not found");
+            }
+
+            // Créez une nouvelle entrée dans la table CourseStudent pour associer le cours à l'étudiant
+            var courseStudent = new CourseStudent
+            {
+                CourseId = courseId,
+                UserId = studentId
+            };
+
+            _context.CourseStudents.Add(courseStudent);
             await _context.SaveChangesAsync();
-            return CreatedAtAction(nameof(GetCourseById), new { id = course.Id }, course);
-        }
+
+    return Ok($"Assigned Course with Id = {courseId} to Student with Id = {studentId}");
+}
 
         [HttpPut("student/{studentId}/{courseId}")]
         [Authorize]
@@ -162,7 +178,7 @@ namespace SchoolApi.Controllers
             var courseToDelete = student.Courses.FirstOrDefault(c => c.Id == courseId);
             if (courseToDelete == null)
             {
-                return NotFound($"Course with Id = {courseId} not found for student");
+                return NotFound($"Cours avec l'id = {courseId} not found for student");
             }
             student.Courses.Remove(courseToDelete);
             await _context.SaveChangesAsync();
