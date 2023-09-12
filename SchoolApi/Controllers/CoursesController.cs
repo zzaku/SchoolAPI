@@ -80,7 +80,7 @@ namespace SchoolApi.Controllers
             {
                 return NotFound($"Course with Id = {id} not found");
             }
-            //courseToUpdate.Name = course.Name;
+
             map(course, courseToUpdate);
             await _context.SaveChangesAsync();
             return NoContent();
@@ -111,8 +111,7 @@ namespace SchoolApi.Controllers
             // Retourner les cours sous forme de contenu JSON
             return Content(coursesJson, "application/json");
         }
-
-        // À modifier
+        
         [HttpPost("student/{studentId}/course/{courseId}")]
         [Authorize]
         public async Task<IActionResult> AssignCourseToStudent(int studentId, int courseId)
@@ -178,7 +177,7 @@ namespace SchoolApi.Controllers
             var courseToDelete = student.Courses.FirstOrDefault(c => c.Id == courseId);
             if (courseToDelete == null)
             {
-                return NotFound($"Course with Id = {courseId} not found for student");
+                return NotFound($"Cours avec l'id = {courseId} not found for student");
             }
             student.Courses.Remove(courseToDelete);
             await _context.SaveChangesAsync();
