@@ -111,9 +111,9 @@ namespace SchoolApi.Controllers
             // Retourner les cours sous forme de contenu JSON
             return Content(coursesJson, "application/json");
         }
-
-        [HttpPost("student/{studentId}/course/{courseId}")]
         
+        [HttpPost("student/{studentId}/course/{courseId}")]
+        [Authorize]
         public async Task<IActionResult> AssignCourseToStudent(int studentId, int courseId)
         {
             // Recherchez l'étudiant par ID
