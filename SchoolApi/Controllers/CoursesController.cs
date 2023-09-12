@@ -80,7 +80,7 @@ namespace SchoolApi.Controllers
             {
                 return NotFound($"Course with Id = {id} not found");
             }
-            //courseToUpdate.Name = course.Name;
+
             map(course, courseToUpdate);
             await _context.SaveChangesAsync();
             return NoContent();
@@ -120,17 +120,16 @@ namespace SchoolApi.Controllers
             var student = await _context.Users.FindAsync(studentId);
             if (student == null)
             {
-                return NotFound($"Student with Id = {studentId} not found");
+                return NotFound($"Etudiant avec l'id = {studentId} pas trouvé");
             }
 
             // Recherchez le cours par ID
             var course = await _context.Courses.FindAsync(courseId);
             if (course == null)
             {
-                return NotFound($"Course with Id = {courseId} not found");
+                return NotFound($"Cours avec l'id = {courseId} pas trouvé");
             }
 
-            // Créez une nouvelle entrée dans la table CourseStudent pour associer le cours à l'étudiant
             var courseStudent = new CourseStudent
             {
                 CourseId = courseId,
