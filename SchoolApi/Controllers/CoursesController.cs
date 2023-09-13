@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 
 namespace SchoolApi.Controllers
 {
+    [Authorize]
     [Route("api/[controller]")]
     [ApiController]
     public class CoursesController : ControllerBase
@@ -24,7 +25,6 @@ namespace SchoolApi.Controllers
         }
 
         [HttpGet]
-        [Authorize]
         public async Task<ActionResult<IEnumerable<Course>>> GetCourses()
         {
             return await _context.Courses.ToListAsync();
@@ -32,7 +32,6 @@ namespace SchoolApi.Controllers
 
 
         [HttpGet("{id}")]
-        [Authorize]
         public async Task<ActionResult<Course>> GetCourseById(int id)
         {
             var course = await _context.Courses.Where(c => c.Id.Equals(id)).FirstOrDefaultAsync();
@@ -44,7 +43,6 @@ namespace SchoolApi.Controllers
         }
 
         [HttpPost]
-        [Authorize]
         public async Task<ActionResult<Course>> CreateCourse(Course course)
         {
             // valider les données
@@ -54,7 +52,6 @@ namespace SchoolApi.Controllers
         }
 
         [HttpDelete("{id}")]
-        [Authorize]
         public async Task<IActionResult> DeleteCourse(int id)
         {
             var course = await _context.Courses.FindAsync(id);
@@ -68,7 +65,6 @@ namespace SchoolApi.Controllers
         }
 
         [HttpPut("{id}")]
-        [Authorize]
         public async Task<IActionResult> UpdateCourse(int id, Course course)
         {
             if (!id.Equals(course.Id))
@@ -85,9 +81,8 @@ namespace SchoolApi.Controllers
             await _context.SaveChangesAsync();
             return NoContent();
         }
-
+        
         [HttpGet("student/{studentId}")]
-        [Authorize]
         public async Task<ActionResult<IEnumerable<Course>>> GetCoursesForStudent(int studentId)
         {
             var student = await _context.Users
@@ -113,7 +108,6 @@ namespace SchoolApi.Controllers
         }
         
         [HttpPost("student/{studentId}/course/{courseId}")]
-        [Authorize]
         public async Task<IActionResult> AssignCourseToStudent(int studentId, int courseId)
         {
             // Recherchez l'étudiant par ID
@@ -143,7 +137,6 @@ namespace SchoolApi.Controllers
 }
 
         [HttpPut("student/{studentId}/{courseId}")]
-        [Authorize]
         public async Task<IActionResult> UpdateCourseForStudent(int studentId, int courseId, Course course)
         {
             if (!courseId.Equals(course.Id))
@@ -166,7 +159,6 @@ namespace SchoolApi.Controllers
         }
 
         [HttpDelete("student/{studentId}/{courseId}")]
-        [Authorize]
         public async Task<IActionResult> DeleteCourseForStudent(int studentId, int courseId)
         {
             var student = await _context.Users.Include(s => s.Courses).FirstOrDefaultAsync(s => s.Id == studentId);
@@ -183,7 +175,7 @@ namespace SchoolApi.Controllers
             await _context.SaveChangesAsync();
             return NoContent();
         }
-
+        
         private void map(Course course, Course courseToUpdate)
         {
             courseToUpdate.Name = course.Name;
