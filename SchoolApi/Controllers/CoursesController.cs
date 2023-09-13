@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 
 namespace SchoolApi.Controllers
 {
+    [Authorize]
     [Route("api/[controller]")]
     [ApiController]
     public class CoursesController : ControllerBase
@@ -24,7 +25,6 @@ namespace SchoolApi.Controllers
         }
 
         [HttpGet]
-        [Authorize]
         public async Task<ActionResult<IEnumerable<Course>>> GetCourses()
         {
             return await _context.Courses.ToListAsync();
@@ -32,7 +32,6 @@ namespace SchoolApi.Controllers
 
 
         [HttpGet("{id}")]
-        [Authorize]
         public async Task<ActionResult<Course>> GetCourseById(int id)
         {
             var course = await _context.Courses.Where(c => c.Id.Equals(id)).FirstOrDefaultAsync();
@@ -44,7 +43,6 @@ namespace SchoolApi.Controllers
         }
 
         [HttpPost]
-        [Authorize]
         public async Task<ActionResult<Course>> CreateCourse(Course course)
         {
             // valider les données
@@ -54,7 +52,6 @@ namespace SchoolApi.Controllers
         }
 
         [HttpDelete("{id}")]
-        [Authorize]
         public async Task<IActionResult> DeleteCourse(int id)
         {
             var course = await _context.Courses.FindAsync(id);
@@ -68,7 +65,6 @@ namespace SchoolApi.Controllers
         }
 
         [HttpPut("{id}")]
-        [Authorize]
         public async Task<IActionResult> UpdateCourse(int id, Course course)
         {
             if (!id.Equals(course.Id))
@@ -82,104 +78,6 @@ namespace SchoolApi.Controllers
             }
 
             map(course, courseToUpdate);
-            await _context.SaveChangesAsync();
-            return NoContent();
-        }
-
-        [HttpGet("student/{studentId}")]
-        [Authorize]
-        public async Task<ActionResult<IEnumerable<Course>>> GetCoursesForStudent(int studentId)
-        {
-            var student = await _context.Users
-                .Include(s => s.Courses)
-                .FirstOrDefaultAsync(s => s.Id == studentId);
-
-            if (student == null)
-            {
-                return NotFound($"Student with Id = {studentId} not found");
-            }
-
-            // Utilisation de JsonSerializerOptions avec ReferenceHandler.Preserve
-            var jsonSerializerOptions = new JsonSerializerOptions
-            {
-                ReferenceHandler = ReferenceHandler.Preserve
-            };
-
-            // Sérialiser les cours en JSON avec les références cycliques préservées
-            var coursesJson = JsonSerializer.Serialize(student.Courses, jsonSerializerOptions);
-
-            // Retourner les cours sous forme de contenu JSON
-            return Content(coursesJson, "application/json");
-        }
-
-        [HttpPost("student/{studentId}/course/{courseId}")]
-        
-        public async Task<IActionResult> AssignCourseToStudent(int studentId, int courseId)
-        {
-            // Recherchez l'étudiant par ID
-            var student = await _context.Users.FindAsync(studentId);
-            if (student == null)
-            {
-                return NotFound($"Etudiant avec l'id = {studentId} pas trouvé");
-            }
-
-            // Recherchez le cours par ID
-            var course = await _context.Courses.FindAsync(courseId);
-            if (course == null)
-            {
-                return NotFound($"Cours avec l'id = {courseId} pas trouvé");
-            }
-
-            var courseStudent = new CourseStudent
-            {
-                CourseId = courseId,
-                UserId = studentId
-            };
-
-            _context.CourseStudents.Add(courseStudent);
-            await _context.SaveChangesAsync();
-
-    return Ok($"Assigned Course with Id = {courseId} to Student with Id = {studentId}");
-}
-
-        [HttpPut("student/{studentId}/{courseId}")]
-        [Authorize]
-        public async Task<IActionResult> UpdateCourseForStudent(int studentId, int courseId, Course course)
-        {
-            if (!courseId.Equals(course.Id))
-            {
-                return BadRequest("IDs are different");
-            }
-            var student = await _context.Users.Include(s => s.Courses).FirstOrDefaultAsync(s => s.Id == studentId);
-            if (student == null)
-            {
-                return NotFound($"Student with Id = {studentId} not found");
-            }
-            var courseToUpdate = student.Courses.FirstOrDefault(c => c.Id == courseId);
-            if (courseToUpdate == null)
-            {
-                return NotFound($"Course with Id = {courseId} not found for student");
-            }
-            map(course, courseToUpdate);
-            await _context.SaveChangesAsync();
-            return NoContent();
-        }
-
-        [HttpDelete("student/{studentId}/{courseId}")]
-        [Authorize]
-        public async Task<IActionResult> DeleteCourseForStudent(int studentId, int courseId)
-        {
-            var student = await _context.Users.Include(s => s.Courses).FirstOrDefaultAsync(s => s.Id == studentId);
-            if (student == null)
-            {
-                return NotFound($"Student with Id = {studentId} not found");
-            }
-            var courseToDelete = student.Courses.FirstOrDefault(c => c.Id == courseId);
-            if (courseToDelete == null)
-            {
-                return NotFound($"Cours avec l'id = {courseId} not found for student");
-            }
-            student.Courses.Remove(courseToDelete);
             await _context.SaveChangesAsync();
             return NoContent();
         }
