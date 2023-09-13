@@ -1,48 +1,80 @@
-﻿using Domain.Exceptions;
-using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Logging;
-using Services;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
-using System.Reflection;
+﻿using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.OpenApi.Models;
+using SchoolApi.Models;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
 using System.Text;
-using System.Text.Json;
-using System.Threading.Tasks;
+using JwtApi;
 
-namespace Services.Startup
+namespace SchoolApi
 {
-    internal sealed class ExceptionHandlingMiddleware : IMiddleware
+    public class Startup
     {
-        private readonly ILogger<ExceptionHandlingMiddleware> _logger;
-        public ExceptionHandlingMiddleware(ILogger<ExceptionHandlingMiddleware> logger) => _logger = logger;
-        public async Task InvokeAsync(HttpContext context, RequestDelegate next)
+        public Startup(IConfiguration configuration)
         {
-            try
-            {
-                await next(context);
-            }
-            catch (Exception e)
-            {
-                _logger.LogError(e, e.Message);
-                await HandleExceptionAsync(context, e);
-            }
+            Configuration = configuration;
         }
-        private static async Task HandleExceptionAsync(HttpContext httpContext, Exception exception)
+
+        public IConfiguration Configuration { get; }
+
+        public void ConfigureServices(IServiceCollection services)
         {
-            httpContext.Response.ContentType = "application/json";
-            httpContext.Response.StatusCode = exception switch
+
+            services.AddControllers();
+            services.AddSwaggerGen(c =>
             {
-                BadRequestException => StatusCodes.Status400BadRequest,
-                NotFoundException => StatusCodes.Status404NotFound,
-                _ => StatusCodes.Status500InternalServerError
-            };
-            var response = new
+                c.SwaggerDoc("v1", new OpenApiInfo { Title = "SchoolApi", Version = "v1" });
+            });
+
+            services.AddAuthentication(options =>
             {
-                error = exception.Message
-            };
-            await httpContext.Response.WriteAsync(JsonSerializer.Serialize(response));
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            })
+
+               .AddJwtBearer(options => {
+                   options.TokenValidationParameters = new TokenValidationParameters
+                   {
+                       ValidateIssuer = false,
+                       ValidateAudience = false,
+                       ValidateIssuerSigningKey = true,
+                       IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Configuration["Jwt:Key"]))
+                   };
+               });
+
+            services.AddTransient<IJwtAuthenticationService, JwtAuthenticationService>();
+
+            services.AddDbContext<SchoolApiContext>(options =>
+                options.UseSqlServer(Configuration.GetConnectionString("SchoolApiContextConnection")));
+
+        }
+
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+        {
+            if (env.IsDevelopment())
+            {
+                app.UseDeveloperExceptionPage();
+                app.UseSwagger();
+                app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "SchoolApi v1"));
+            }
+
+            app.UseHttpsRedirection();
+
+            app.UseRouting();
+
+            app.UseAuthentication();
+
+            app.UseAuthorization();
+
+            app.UseEndpoints(endpoints =>
+            {
+                endpoints.MapControllers();
+            });
         }
     }
 }
