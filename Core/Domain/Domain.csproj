@@ -6,8 +6,4 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
-  <ItemGroup>
-    <Compile Include="..\..\Infrastructure\Presentation\Controllers\CoursesControllers.cs" Link="CoursesControllers.cs" />
-  </ItemGroup>
-
 </Project>

@@ -1,11 +1,9 @@
-﻿using Domain.Exceptions;
-using Domain.Entities;
-using System;
-using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
+﻿using Domain.Entities;
 using Services.Abstractions;
-using MediaBrowser.Model.Dto;
+using Domain.Exceptions;
+using Domain.Repositories;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Services
 {
@@ -18,71 +16,102 @@ namespace Services
             _repositoryManager = repositoryManager ?? throw new ArgumentNullException(nameof(repositoryManager));
         }
 
-        public async Task<IEnumerable<UserDto>> GetAllByOwnerIdAsync(Guid ownerId, CancellationToken cancellationToken = default)
+        public async Task<IEnumerable<User>> GetAllByOwnerIdAsync(Guid ownerId, CancellationToken cancellationToken = default)
         {
-            var users = await _repositoryManager.UserRepository.GetAllByOwnerIdAsync(ownerId, cancellationToken);
-            var userDtos = users.Adapt<IEnumerable<UserDto>>();
-            return userDtos;
-        }
-
-        public async Task<UserDto> GetByIdAsync(Guid ownerId, Guid userId, CancellationToken cancellationToken)
-        {
-            var owner = await _repositoryManager.OwnerRepository.GetByIdAsync(ownerId, cancellationToken);
-            if (owner is null)
+            var owner = await _repositoryManager.GetUserByIdAsync(ownerId, cancellationToken);
+            if (owner == null)
             {
                 throw new OwnerNotFoundException(ownerId);
             }
 
-            var user = await _repositoryManager.UserRepository.GetByIdAsync(userId, cancellationToken);
-            if (user is null)
+            // Récupérez tous les utilisateurs associés à ce propriétaire.
+            var users = await _repositoryManager
+                .Find(u => u.OwnerId == owner.Id)
+                .ToListAsync(cancellationToken);
+
+            return users;
+        }
+
+        public async Task<User> GetByIdAsync(Guid ownerId, Guid userId, CancellationToken cancellationToken)
+        {
+            var owner = await _repositoryManager.GetUserByIdAsync(ownerId, cancellationToken);
+            if (owner == null)
+            {
+                throw new OwnerNotFoundException(ownerId);
+            }
+
+            var user = await _repositoryManager
+                .Find(u => u.Id == userId && u.OwnerId == owner.Id)
+                .FirstOrDefaultAsync(cancellationToken);
+
+            if (user == null)
             {
                 throw new UserNotFoundException(userId);
             }
 
-            if (user.OwnerId != owner.Id)
-            {
-                throw new UserDoesNotBelongToOwnerException(owner.Id, user.Id);
-            }
-
-            var userDto = user.Adapt<UserDto>();
-            return userDto;
+            return user;
         }
 
-        public async Task<UserDto> CreateAsync(Guid ownerId, UserForCreationDto userForCreationDto, CancellationToken cancellationToken = default)
+        public async Task<User> CreateUserAsync(Guid ownerId, User user, CancellationToken cancellationToken = default)
         {
-            var owner = await _repositoryManager.OwnerRepository.GetByIdAsync(ownerId, cancellationToken);
-            if (owner is null)
+            var owner = await _repositoryManager.GetUserByIdAsync(ownerId, cancellationToken);
+            if (owner == null)
             {
                 throw new OwnerNotFoundException(ownerId);
             }
 
-            var user = userForCreationDto.Adapt<User>();
             user.OwnerId = owner.Id;
 
-            _repositoryManager.UserRepository.Insert(user);
+            _repositoryManager.Insert(user);
             await _repositoryManager.UnitOfWork.SaveChangesAsync(cancellationToken);
 
-            var userDto = user.Adapt<UserDto>();
-            return userDto;
+            return user; // Retournez l'utilisateur créé.
         }
 
-        public async Task DeleteAsync(Guid ownerId, Guid userId, CancellationToken cancellationToken = default)
+        public async Task<User> UpdateUserAsync(Guid ownerId, User user, CancellationToken cancellationToken = default)
         {
-            var owner = await _repositoryManager.OwnerRepository.GetByIdAsync(ownerId, cancellationToken);
-            if (owner is null)
+            var owner = await _repositoryManager.GetUserByIdAsync(ownerId, cancellationToken);
+            if (owner == null)
             {
                 throw new OwnerNotFoundException(ownerId);
             }
 
-            var user = await _repositoryManager.UserRepository.GetByIdAsync(userId, cancellationToken);
-            if (user is null)
+            // Vous devez obtenir l'utilisateur existant à mettre à jour à partir du DbContext.
+            var existingUser = await _repositoryManager.UserRepository
+                .FirstOrDefaultAsync(u => u.Id == user.Id && u.OwnerId == owner.Id, cancellationToken);
+
+            if (existingUser == null)
             {
-                throw new UserNotFoundException(userId);
+                throw new UserNotFoundException(user.Id);
             }
 
-            if (user.OwnerId != owner.Id)
+            // Mettez à jour les propriétés de l'utilisateur existant avec les nouvelles valeurs.
+            existingUser.Username = user.Username;
+            existingUser.Email = user.Email;
+            existingUser.Password = user.Password;
+
+            // Vous pouvez également mettre à jour d'autres propriétés si nécessaire.
+
+            await _repositoryManager.UnitOfWork.SaveChangesAsync(cancellationToken);
+
+            return existingUser;
+        }
+
+        public async Task DeleteUserAsync(Guid ownerId, Guid userId, CancellationToken cancellationToken = default)
+        {
+            var owner = await _repositoryManager.OwnerRepository.GetByIdAsync(ownerId, cancellationToken);
+            if (owner == null)
             {
-                throw new UserDoesNotBelongToOwnerException(owner.Id, user.Id);
+                throw new OwnerNotFoundException(ownerId);
+            }
+
+            var user = await _repositoryManager.UserRepository
+                .Find(u => u.Id == userId && u.OwnerId == owner.Id)
+                .FirstOrDefaultAsync(cancellationToken);
+
+            if (user == null)
+            {
+                throw new UserNotFoundException(userId);
             }
 
             _repositoryManager.UserRepository.Remove(user);

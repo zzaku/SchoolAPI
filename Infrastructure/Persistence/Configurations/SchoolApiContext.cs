@@ -9,13 +9,13 @@ using SchoolApi.Models;
 
 namespace Persistence.Configurations
 {
-    internal class UserConfiguration
+    public class SchoolApiContext : DbContext // Héritez de DbContext
     {
-        public SchoolApiContext(DbContextOptions<SchoolApiContext> options)
-            : base(options)
+        public SchoolApiContext(DbContextOptions<SchoolApiContext> options) : base(options)
         {
-
         }
+
+        // DbSet pour chaque entité que vous souhaitez mapper à votre base de données
         public DbSet<Course> Courses { get; set; }
         public DbSet<User> Users { get; set; }
         public DbSet<CourseStudent> CourseStudents { get; set; }

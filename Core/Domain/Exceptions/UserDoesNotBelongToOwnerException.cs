@@ -6,9 +6,9 @@ using System.Threading.Tasks;
 
 namespace Domain.Exceptions
 {
-    public sealed class AccountDoesNotBelongToOwnerException : BadRequestException
+    public sealed class UserDoesNotBelongToOwnerException : BadRequestException
     {
-        public AccountDoesNotBelongToOwnerException(Guid ownerId, Guid accountId)
+        public UserDoesNotBelongToOwnerException(Guid ownerId, Guid accountId)
             : base($"The account with the identifier {accountId} does not belong to the owner with the identifier {ownerId}")
         {
         }

@@ -1,5 +1,4 @@
-﻿using JwtApi.Models;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -12,5 +11,6 @@ namespace Domain.Entities
         public string Name { get; set; }
         
         public ICollection<User> Users { get; set; }
+        public ICollection<CourseStudent> CourseStudents { get; set; }
     }
 }

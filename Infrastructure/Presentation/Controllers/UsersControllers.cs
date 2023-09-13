@@ -59,7 +59,7 @@ namespace Presentation.Controllers
             {
                 return NotFound($"Etudiant avec l'id = {studentId} pas trouvé");
             }
-
+            
             // Recherchez le cours par ID
             var course = await _context.Courses.FindAsync(courseId);
             if (course == null)

@@ -14,11 +14,11 @@ namespace Presentation.Controllers
     [Authorize]
     [Route("api/[controller]")]
     [ApiController]
-    public class CoursesController : ControllerBase
+    public class CoursesControllers : ControllerBase
     {
         private readonly SchoolApiContext _context;
 
-        public CoursesController(SchoolApiContext context)
+        public CoursesControllers(SchoolApiContext context)
         {
             _context = context;
         }

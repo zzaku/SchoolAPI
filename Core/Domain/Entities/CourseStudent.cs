@@ -1,4 +1,4 @@
-﻿using JwtApi.Models;
+﻿using Domain.Entities;
 
 namespace Domain.Entities
 {
